@@ -16,7 +16,8 @@ https://github.com/kovidgoyal/calibre
 
 
 ## Como instalar o plugin: 
-__Abra o Calibre  e clique em preferências:__
+Primeiro Baixe o arquivo  [__libgen.zip__](https://github.com/samuel-cavalcanti/MY-libgen-calibre-plugin/releases/download/0.0.1/libgen.zip),
+depois __Abra o Calibre  e clique em preferências:__
 ![](images/vai_em_preferencia_coracao.png) 
 
 
