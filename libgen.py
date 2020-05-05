@@ -1,4 +1,5 @@
 import requests
+import urllib
 from bs4 import BeautifulSoup
 
 
@@ -18,6 +19,7 @@ class SearchRequest:
         self.base_url = "http://gen.lib.rus.ec"
         self.search_url = self.base_url + '/search.php?req='
         self.view_detailed = '&view=detailed'  # get image
+        self.sorting_by_year = "&sort=year&sortmode=DESC"
 
     def strip_i_tag_from_soup(self, soup):
         subheadings = soup.find_all("i")
@@ -39,9 +41,9 @@ class SearchRequest:
     def get_search_page(self):
         query_parsed = "%20".join(self.query.split(" "))
         if self.search_type.lower() == 'title':
-            search_view_detailed_url = self.search_url + query_parsed + '&column=title' + self.view_detailed
+            search_view_detailed_url = self.search_url + query_parsed + '&column=title' + self.view_detailed + self.sorting_by_year
         elif self.search_type.lower() == 'author':
-            search_view_detailed_url = self.search_url + query_parsed + '&column=author' + self.view_detailed
+            search_view_detailed_url = self.search_url + query_parsed + '&column=author' + self.view_detailed + self.sorting_by_year
 
         return requests.get(search_view_detailed_url)
 
@@ -74,31 +76,52 @@ class SearchRequest:
 
         table = dict()
         for tr in t_body_tag.find_all("tr")[1:]:
-            td_it = iter(tr.find_all("td"))
-            td = next(td_it, None)
-            while td is not None:
+            for td in tr.find_all("td"):
+                if len(td) == 0:  # have nothing
+                    continue
+                if td.attrs.get("rowspan", None):
+                    table["Link"] = self.base_url + td.find("a").attrs["href"]
+                    continue
+
                 font_tag = td.find("font")
                 if font_tag and font_tag.get("color") == "gray":
                     key = td.getText().split(":")[0]
-                    td = next(td_it, None)
-                    pass
                 else:
-                    value = td.getText()
-                    if value != "":
-                        table[key] = value
 
-                    if td.attrs.get("rowspan", None):
-                        table["Link"] = self.base_url + td.find("a").attrs["href"]
+                    table[key] = td.getText()
 
-                    td = next(td_it, None)
         table["Img"] = self.base_url + t_body_tag.find("img").get("src")
+
+        self.make_link(table)
 
         return table
 
+    @staticmethod
+    def make_link(table):
+
+        file = str()
+
+        if table.get("Series", "") != "":
+            file += "({}) ".format(table["Series"])
+
+        file += "{} - {}".format(table["Author(s)"], table["Title"].replace(":", "_"))
+
+        if table.get("Publisher", "") != "":
+            file += "-{}".format(table["Publisher"])
+
+        file += " ({}).{}".format(table["Year"], table["Extension"])
+
+        md5 = table["Link"].split("=")[1].lower()
+        img_id = table["Img"].split("/")[4]
+
+        link = "http://93.174.95.29/main/{}/{}/{}".format(img_id, md5, urllib.quote(file))
+
+        table["Mirrors"] = {table["Extension"].upper(): link}
+
     def scraping_detailed_view_data(self, search_page):
 
-        soup = BeautifulSoup(search_page.text, 'lxml')
-        self.strip_i_tag_from_soup(soup)
+        soup = BeautifulSoup(search_page.text, "html5lib")
+        # self.strip_i_tag_from_soup(soup)
 
         print("numbers of tbody", len(soup.find_all("tbody")))
         for tbody in soup.find_all("tbody"):
@@ -120,7 +143,7 @@ class SearchRequest:
         for mirror in mirrors:
             resp = requests.get(mirror)
             if 199 < resp.status_code < 300:
-                url_link = BeautifulSoup(resp.text, "lxml").find("a", string="GET")
+                url_link = BeautifulSoup(resp.text, "html").find("a", string="GET")
                 if url_link:
                     downloads.append(url_link.attrs["href"])
 
@@ -135,16 +158,35 @@ class SearchRequest:
 
         return self.get_download_link_and_formatting_data(t_body_iter)
 
+    def aggregate_request_data_iter(self):
+        search_page_detailed = self.get_search_page()
+
+        t_body_iter = self.scraping_detailed_view_data(search_page_detailed)
+
+        return t_body_iter
+
 
 class LibgenSearch:
 
-    def search_title(self, query):
-        self.search_request = SearchRequest(query, search_type="title")
-        return self.search_request.aggregate_request_data()
+    @staticmethod
+    def search_title(query):
+        search_request = SearchRequest(query, search_type="title")
+        return search_request.aggregate_request_data()
 
-    def search_author(self, query):
-        self.search_request = SearchRequest(query, search_type="author")
-        return self.search_request.aggregate_request_data()
+    @staticmethod
+    def search_title_iter(query):
+        search_request = SearchRequest(query, search_type="title")
+        return search_request.aggregate_request_data_iter()
+
+    @staticmethod
+    def search_author(query):
+        search_request = SearchRequest(query, search_type="author")
+        return search_request.aggregate_request_data()
+
+    @staticmethod
+    def search_author_iter(query):
+        search_request = SearchRequest(query, search_type="author")
+        return search_request.aggregate_request_data_iter()
 
     def search_title_filtered(self, query, filters=None):
         if filters is None:
@@ -192,11 +234,23 @@ class LibgenSearch:
 
 def test_libgen():
     libgen_search = LibgenSearch()
-    libgen_results = libgen_search.search_title("way kings")
+    libgen_results = libgen_search.search_title("hacking for dummies")
 
     for result in libgen_results:
-        for key in result:
-            print(key + ":", result[key])
+        print(result)
+        link = str()
+
+        if result.get("Series", "") != "":
+            link += "({}) ".format(result["Series"])
+
+        link += "{} - {}".format(result["Author(s)"], result["Title"].replace(":", "_"))
+
+        if result.get("Publisher", "") != "":
+            link += "-{}".format(result["Publisher"])
+
+        link += " ({}).{}".format(result["Year"], result["Extension"])
+
+        print(link)
 
         pass
 

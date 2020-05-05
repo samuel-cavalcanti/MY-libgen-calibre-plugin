@@ -6,7 +6,6 @@ store_version = 5  # Needed for dynamic plugin loading
 
 __license__ = 'MIT'
 
-
 #####################################################################
 # Plug-in base class
 #####################################################################
@@ -22,7 +21,6 @@ PLUGIN_AUTHORS = "Samuel Cavalcanti (https://github.com/samuel-cavalcanti/MY-lib
 
 from .libgen import LibgenSearch
 
-
 from calibre.gui2.store.web_store_dialog import WebStoreDialog
 from calibre.gui2.store.search_result import SearchResult
 from calibre.gui2.store import StorePlugin
@@ -33,25 +31,29 @@ from PyQt5.Qt import QUrl
 
 class LibgenStore(StorePlugin):
     def search(self, query, max_results=10, timeout=60):
-        libgen_search = LibgenSearch()
-        libgen_title_results = libgen_search.search_title(query)
-        libgen_author_results = libgen_search.search_author(query)
+        search = LibgenSearch()
+        title_results = search.search_title(query)
+        author_results = search.search_author(query)
 
-        for result in libgen_title_results + libgen_author_results:
-            s = SearchResult()
+        for result in title_results + author_results:
+            yield self.to_search_result(result)
 
-            s.store_name = "Libgen"
-            s.title = result["Title"]
-            s.author = result["Author(s)"]
-            s.price = "FREE!!"
-            s.language = result["Language"]
+    @staticmethod
+    def to_search_result(result):
+        s = SearchResult()
 
-            s.formats = result["Extension"]
-            s.drm = SearchResult.DRM_UNLOCKED
-            s.cover_url = result["Img"]
-            s.detail_item = result["Link"]
+        s.store_name = "Libgen"
+        s.title = result["Title"]
+        s.author = result["Author(s)"]
+        s.price = "FREE!!"
+        s.language = result["Language"]
+        s.downloads = result["Mirrors"]
+        s.formats = result["Extension"]
+        s.drm = SearchResult.DRM_UNLOCKED
+        s.cover_url = result["Img"]
+        s.detail_item = result["Link"]
 
-            yield s
+        return s
 
     def open(self, gui, detail_item=None, external=False, parent=None):
         url = "http://gen.lib.rus.ec"
@@ -66,7 +68,6 @@ class LibgenStore(StorePlugin):
             d = WebStoreDialog(self.gui, detail_item)
             d.setWindowTitle(self.name)
             d.exec_()
-
 
 
 class LibgenStoreWrapper(StoreBase):
