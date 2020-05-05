@@ -54,6 +54,8 @@ só procure por __libgen__ e marque a caixinha que na na setinha __rosa__
 
 - __seu lugar não é aqui__: feche essa aba.
 
+![](images/eu_sei_que_voce_apertou.png)
+
 Agora para verificar se tudo correu bem faça uma busca, como por exemplo __meta learning___, se
 você seguiu a opção pobre, então deve aparecer mais ou menos  o seguinte resultado:
 ![](images/deu_tudo_certo.png)
