@@ -16,7 +16,7 @@ class SearchRequest:
     def __init__(self, query, search_type="title"):
         self.query = query
         self.search_type = search_type
-        self.base_url = "http://gen.lib.rus.ec"
+        self.base_url = "https://libgen.is"
         self.search_url = self.base_url + '/search.php?req='
         self.view_detailed = '&view=detailed'  # get image
         self.sorting_by_year = "&sort=year&sortmode=DESC"

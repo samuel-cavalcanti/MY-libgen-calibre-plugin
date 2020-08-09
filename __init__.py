@@ -12,7 +12,7 @@ __license__ = 'MIT'
 
 PLUGIN_NAME = 'Libgen'
 PLUGIN_DESCRIPTION = 'Adds a Libgen search provider to Calibre'
-PLUGIN_VERSION_TUPLE = (0, 0, 1)
+PLUGIN_VERSION_TUPLE = (0, 0, 2)
 PLUGIN_VERSION = '.'.join([str(x) for x in PLUGIN_VERSION_TUPLE])
 PLUGIN_AUTHORS = "Samuel Cavalcanti (https://github.com/samuel-cavalcanti/MY-libgen-calibre-plugin)"
 
@@ -56,7 +56,7 @@ class LibgenStore(StorePlugin):
         return s
 
     def open(self, gui, detail_item=None, external=False, parent=None):
-        url = "http://gen.lib.rus.ec"
+        url = "https://libgen.is"
 
         if external:
             if detail_item:
