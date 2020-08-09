@@ -41,16 +41,19 @@ class SearchRequest:
     def get_search_page(self):
         query_parsed = "%20".join(self.query.split(" "))
         if self.search_type.lower() == 'title':
-            search_view_detailed_url = self.search_url + query_parsed + '&column=title' + self.view_detailed + self.sorting_by_year
+            search_view_detailed_url = self.search_url + query_parsed + \
+                '&column=title' + self.view_detailed + self.sorting_by_year
         elif self.search_type.lower() == 'author':
-            search_view_detailed_url = self.search_url + query_parsed + '&column=author' + self.view_detailed + self.sorting_by_year
+            search_view_detailed_url = self.search_url + query_parsed + \
+                '&column=author' + self.view_detailed + self.sorting_by_year
 
         return requests.get(search_view_detailed_url)
 
     @staticmethod
     def scraping_mirrors_in_table(table):
 
-        for tr in table.find_all("tr")[1:]:  # Skip row 0 as it is the headings row
+        # Skip row 0 as it is the headings row
+        for tr in table.find_all("tr")[1:]:
             mirrors = list()
             for td in tr.find_all("td"):
                 a = td.find('a')
@@ -92,29 +95,42 @@ class SearchRequest:
 
         table["Img"] = self.base_url + t_body_tag.find("img").get("src")
 
-        self.make_link(table)
+        encoded_table = {
+            key.encode(): table[key.encode()].encode('utf-8', 'ignore') for key in table}
 
-        return table
+        self.make_link(encoded_table)
+
+        return encoded_table
 
     @staticmethod
     def make_link(table):
 
         file = str()
 
-        if table.get("Series", "") != "":
+        if table.get("Series", False):
             file += "({}) ".format(table["Series"])
 
-        file += "{} - {}".format(table["Author(s)"], table["Title"].replace(":", "_"))
+        file += "{} - {}".format(table["Author(s)"],
+                                 table["Title"].replace(":", "_"))
 
         if table.get("Publisher", "") != "":
             file += "-{}".format(table["Publisher"])
 
         file += " ({}).{}".format(table["Year"], table["Extension"])
 
-        md5 = table["Link"].split("=")[1].lower()
-        img_id = table["Img"].split("/")[4]
+        splitted_link = table["Link"].split("md5=")
 
-        link = "http://93.174.95.29/main/{}/{}/{}".format(img_id, md5, urllib.quote(file))
+        splitted_img_url = table["Img"].split("/")
+
+        if len(splitted_link) != 2 or len(splitted_img_url) != 6:
+            return
+
+        print(file)
+        md5 = splitted_link[1].lower()
+        img_id = splitted_img_url[4]
+
+        link = "http://93.174.95.29/main/{}/{}/{}".format(
+            img_id, md5, urllib.quote(file))
 
         table["Mirrors"] = {table["Extension"].upper(): link}
 
@@ -143,7 +159,8 @@ class SearchRequest:
         for mirror in mirrors:
             resp = requests.get(mirror)
             if 199 < resp.status_code < 300:
-                url_link = BeautifulSoup(resp.text, "html").find("a", string="GET")
+                url_link = BeautifulSoup(
+                    resp.text, "html").find("a", string="GET")
                 if url_link:
                     downloads.append(url_link.attrs["href"])
 
@@ -206,7 +223,8 @@ class LibgenSearch:
 
         filtered_data = data
         for f in filters:
-            filtered_data = [d for d in filtered_data if d[f] in filters.values()]
+            filtered_data = [
+                d for d in filtered_data if d[f] in filters.values()]
         return filtered_data
 
     def search_author_filtered(self, query, filters=None):
@@ -228,13 +246,14 @@ class LibgenSearch:
 
         filtered_data = data
         for f in filters:
-            filtered_data = [d for d in filtered_data if d[f] in filters.values()]
+            filtered_data = [
+                d for d in filtered_data if d[f] in filters.values()]
         return filtered_data
 
 
 def test_libgen():
     libgen_search = LibgenSearch()
-    libgen_results = libgen_search.search_title("hacking for dummies")
+    libgen_results = libgen_search.search_title("algebra")
 
     for result in libgen_results:
         print(result)
@@ -243,7 +262,8 @@ def test_libgen():
         if result.get("Series", "") != "":
             link += "({}) ".format(result["Series"])
 
-        link += "{} - {}".format(result["Author(s)"], result["Title"].replace(":", "_"))
+        link += "{} - {}".format(result["Author(s)"],
+                                 result["Title"].replace(":", "_"))
 
         if result.get("Publisher", "") != "":
             link += "-{}".format(result["Publisher"])
