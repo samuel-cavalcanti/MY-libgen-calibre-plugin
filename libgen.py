@@ -96,7 +96,7 @@ class SearchRequest:
         table["Img"] = self.base_url + t_body_tag.find("img").get("src")
 
         encoded_table = {
-            key.encode(): table[key.encode()].encode('utf-8', 'ignore') for key in table}
+            key.encode('utf-8', 'ignore'): table[key].encode('utf-8', 'ignore') for key in table}
 
         self.make_link(encoded_table)
 
@@ -113,10 +113,14 @@ class SearchRequest:
         file += "{} - {}".format(table["Author(s)"],
                                  table["Title"].replace(":", "_"))
 
-        if table.get("Publisher", "") != "":
+        if table.get("Publisher", False):
             file += "-{}".format(table["Publisher"])
 
-        file += " ({}).{}".format(table["Year"], table["Extension"])
+        if table.get("Year", False) and table.get("Extension", False):
+            file += " ({}).{}".format(table["Year"], table["Extension"])
+        else:
+            for key in table:
+                print(key, table[key])
 
         splitted_link = table["Link"].split("md5=")
 
@@ -125,7 +129,6 @@ class SearchRequest:
         if len(splitted_link) != 2 or len(splitted_img_url) != 6:
             return
 
-        print(file)
         md5 = splitted_link[1].lower()
         img_id = splitted_img_url[4]
 
@@ -253,10 +256,10 @@ class LibgenSearch:
 
 def test_libgen():
     libgen_search = LibgenSearch()
-    libgen_results = libgen_search.search_title("algebra")
+    libgen_results = libgen_search.search_author("eduardo moreira")
 
     for result in libgen_results:
-        print(result)
+
         link = str()
 
         if result.get("Series", "") != "":
@@ -268,29 +271,13 @@ def test_libgen():
         if result.get("Publisher", "") != "":
             link += "-{}".format(result["Publisher"])
 
-        link += " ({}).{}".format(result["Year"], result["Extension"])
+        # link += " ({}).{}".format(result["Year"], result["Extension"])
 
         print(link)
 
         pass
 
 
-def compress_files():
-    import zipfile
-    import os
-    name_file = "libgen.zip"
-
-    print("zipping!")
-    if os.path.isfile(name_file):
-        os.remove(name_file)
-    zf = zipfile.ZipFile(name_file, "w", zipfile.ZIP_DEFLATED)
-
-    zf.write("libgen.py")
-    zf.write("__init__.py")
-
-    print("Done")
-
-
 if __name__ == '__main__':
-    # test_libgen()
-    compress_files()
+    test_libgen()
+   

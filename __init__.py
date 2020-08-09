@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import (unicode_literals, division, absolute_import, print_function)
+from __future__ import (unicode_literals, division,
+                        absolute_import, print_function)
+from PyQt5.Qt import QUrl
+from calibre.customize import StoreBase
+from calibre.gui2 import open_url
+from calibre.gui2.store import StorePlugin
+from calibre.gui2.store.search_result import SearchResult
+from calibre.gui2.store.web_store_dialog import WebStoreDialog
+from .libgen import LibgenSearch
 
 store_version = 5  # Needed for dynamic plugin loading
 
@@ -19,23 +27,25 @@ PLUGIN_AUTHORS = "Samuel Cavalcanti (https://github.com/samuel-cavalcanti/MY-lib
 #####################################################################
 
 
-from .libgen import LibgenSearch
-
-from calibre.gui2.store.web_store_dialog import WebStoreDialog
-from calibre.gui2.store.search_result import SearchResult
-from calibre.gui2.store import StorePlugin
-from calibre.gui2 import open_url
-from calibre.customize import StoreBase
-from PyQt5.Qt import QUrl
-
-
 class LibgenStore(StorePlugin):
-    def search(self, query, max_results=10, timeout=60):
+    def search(self, query, max_results=1, timeout=120):
         search = LibgenSearch()
+        print("Query:", query)
+
         title_results = search.search_title(query)
+
         author_results = search.search_author(query)
 
+        print("finish search ! total files: {}".format(
+            len(title_results) + len(author_results)))
+
+    
+        current = 0
+  
         for result in title_results + author_results:
+            print("result: ", result.get("Title", " "), str(current))
+            current += 1
+
             yield self.to_search_result(result)
 
     @staticmethod
@@ -43,15 +53,15 @@ class LibgenStore(StorePlugin):
         s = SearchResult()
 
         s.store_name = "Libgen"
-        s.title = result["Title"]
-        s.author = result["Author(s)"]
+        s.title = result.get("Title", " ")
+        s.author = result.get("Author(s)", " ")
         s.price = "FREE!!"
-        s.language = result["Language"]
-        s.downloads = result["Mirrors"]
-        s.formats = result["Extension"]
+        s.language = result.get("Language", " ")
+        s.downloads = result.get("Mirrors", " ")
+        s.formats = result.get("Extension", " ")
         s.drm = SearchResult.DRM_UNLOCKED
-        s.cover_url = result["Img"]
-        s.detail_item = result["Link"]
+        s.cover_url = result.get("Img", " ")
+        s.detail_item = result.get("Link", " ")
 
         return s
 
@@ -85,5 +95,6 @@ class LibgenStoreWrapper(StoreBase):
         '''
         # mod, cls = self.actual_plugin.split(':')
         store = LibgenStore(gui, self.name)
-        self.actual_plugin_object = store  # getattr(importlib.import_module(mod), cls)(gui, self.name)
+        # getattr(importlib.import_module(mod), cls)(gui, self.name)
+        self.actual_plugin_object = store
         return self.actual_plugin_object
