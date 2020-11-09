@@ -2,13 +2,15 @@
 
 from __future__ import (unicode_literals, division,
                         absolute_import, print_function)
+
 from PyQt5.Qt import QUrl
 from calibre.customize import StoreBase
 from calibre.gui2 import open_url
 from calibre.gui2.store import StorePlugin
 from calibre.gui2.store.search_result import SearchResult
 from calibre.gui2.store.web_store_dialog import WebStoreDialog
-from .libgen import LibgenSearch
+
+from libgen_search import LibgenSearch
 
 store_version = 5  # Needed for dynamic plugin loading
 
@@ -20,9 +22,10 @@ __license__ = 'MIT'
 
 PLUGIN_NAME = 'Libgen'
 PLUGIN_DESCRIPTION = 'Adds a Libgen search provider to Calibre'
-PLUGIN_VERSION_TUPLE = (0, 0, 2)
+PLUGIN_VERSION_TUPLE = (0, 1, 2)
 PLUGIN_VERSION = '.'.join([str(x) for x in PLUGIN_VERSION_TUPLE])
 PLUGIN_AUTHORS = "Samuel Cavalcanti (https://github.com/samuel-cavalcanti/MY-libgen-calibre-plugin)"
+
 
 #####################################################################
 
@@ -32,36 +35,25 @@ class LibgenStore(StorePlugin):
         search = LibgenSearch()
         print("Query:", query)
 
-        title_results = search.search_title(query)
+        result_of_scraping = search.default_search(query)
 
-        author_results = search.search_author(query)
-
-        print("finish search ! total files: {}".format(
-            len(title_results) + len(author_results)))
-
-    
-        current = 0
-  
-        for result in title_results + author_results:
-            print("result: ", result.get("Title", " "), str(current))
-            current += 1
-
-            yield self.to_search_result(result)
+        for book in result_of_scraping:
+            yield self.to_search_result(book)
 
     @staticmethod
-    def to_search_result(result):
+    def to_search_result(book):
         s = SearchResult()
 
         s.store_name = "Libgen"
-        s.title = result.get("Title", " ")
-        s.author = result.get("Author(s)", " ")
+        s.title = book.get("Title", " ")
+        s.author = book.get("Author(s)", " ")
         s.price = "FREE!!"
-        s.language = result.get("Language", " ")
-        s.downloads = result.get("Mirrors", " ")
-        s.formats = result.get("Extension", " ")
+        s.language = book.get("Language", " ")
+        s.downloads = book.get("Mirrors", " ")
+        s.formats = book.get("Extension", " ")
         s.drm = SearchResult.DRM_UNLOCKED
-        s.cover_url = result.get("Img", " ")
-        s.detail_item = result.get("Link", " ")
+        s.cover_url = book.get("Img", " ")
+        s.detail_item = book.get("Link", " ")
 
         return s
 

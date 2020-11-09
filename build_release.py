@@ -11,7 +11,7 @@ def compress_files():
         os.remove(name_file)
     zf = zipfile.ZipFile(name_file, "w", zipfile.ZIP_DEFLATED)
 
-    zf.write("libgen.py")
+    zf.write("libgen_search.py")
     zf.write("__init__.py")
 
     print("Done")
